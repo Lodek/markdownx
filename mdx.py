@@ -4,6 +4,7 @@ import subprocess, sys, re
 class Parser:
 
     variables = {}
+    variable_matches = []
     txt = ''
     lines = []
     command_matches = []
@@ -15,6 +16,7 @@ class Parser:
         
     def parse(self):
         self.read_variables()
+        self.declarations_cleanup()
         self.read_commands()
         self.substitute_variables()
         self.execute_commands()
@@ -22,8 +24,8 @@ class Parser:
     def read_variables(self):
         """Create dictionary with variable names and values"""
         exp = r'^\$\$([a-zA-Z_][a-zA-Z0-9_]+)=(.*)$'
-        matches = list(re.finditer(exp, self.txt, flags=re.MULTILINE))
-        self.variables = {match.group(1) : match.group(2) for match in matches if match}
+        self.variable_matches = list(re.finditer(exp, self.txt, flags=re.MULTILINE))
+        self.variables = {match.group(1) : match.group(2) for match in self.variable_matches if match}
         
 
     def read_commands(self):
@@ -46,6 +48,11 @@ class Parser:
             result = subprocess.run(cmd.split(), stdout=subprocess.PIPE)
             out = result.stdout.decode('utf-8')
             self.output = self.output.replace(match.group(0), out)
+
+    def declarations_cleanup(self):
+        """Remove varible declarations"""
+        for match in self.variable_matches:
+            self.output = self.output.replace(match.group(0), '')
             
 def main():
     with open(sys.argv[1], 'r') as f:
